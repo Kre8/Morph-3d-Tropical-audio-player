@@ -1,0 +1,667 @@
+<html lang="en" dir="ltr" class="js-focus-visible" data-js-focus-visible=""><head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">  
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>    
+<script type="module" src="https://unpkg.com/@google/model-viewer@1.12.0/dist/model-viewer.min.js"></script>
+<style>
+model-viewer{
+width:100vw;
+height:80vh;
+margin-top:-5vh;
+}		
+.pausediv{position:absolute;margin-top:-60vh;background-color: rgba(240, 248, 255, 0); cursor:pointer}
+.pausebtn{
+width:90vw; margin:5vw; position:absolute; height:30vh;background-color: rgba(240, 248, 255, 0);border:none;cursor:pointer
+}
+.playdiv{position:absolute;margin-top:-60vh;background-color: rgba(240, 248, 255, 0);border:none;cursor:pointer}
+.playbtn{
+width:90vw; margin:5vw; position:absolute; height:30vh;background-color: rgba(240, 248, 255, 0);border:none;cursor:pointer
+}
+#myProgress {
+  width: 420px;
+  background: linear-gradient(0deg, rgb(134, 142, 145) 15%, rgb(129, 201, 198) 42%, rgba(234,255,255,1) 74%, rgb(207, 246, 247) 100%);
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+#myBar {
+  width: 0%;
+  height: 5px;
+  background-color: #1177b7;
+  border-radius: 10px;
+}
+
+.btn-ctn, .infos-ctn{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.infos-ctn{
+padding-top: 20px;
+}
+
+.btn-ctn > div {
+ padding: 5px;
+ margin-top: 18px;
+ margin-bottom: 18px;
+}
+
+.infos-ctn > div {
+ margin-bottom: 8px;
+
+  color: #cfcbcb !important;
+  font-weight: bold;
+}
+
+.first-btn{
+  margin-left: 3px;
+}
+
+.duration{
+  margin-left: 10px;
+}
+
+.title{
+  margin-left: 10px;
+  width: 210px;
+  text-align: center;
+}
+
+.player-ctn{
+  border-radius: 15px;
+  width: 420px;
+  padding: 10px;
+  background-color: #37373700;
+  margin:auto;
+  margin-top: 100px;
+}
+
+.playlist-track-ctn{
+  display: flex;
+  background-color: #46464600;
+  margin-top: 3px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.playlist-track-ctn > div{
+  margin:10px;
+}
+.playlist-info-track{
+  width: 80%;
+}
+.playlist-info-track,.playlist-duration{
+  padding-top: 7px;
+  padding-bottom: 7px;
+  color: #bab9b800;
+  font-size: 18px;
+  pointer-events: none;
+}
+.playlist-ctn{
+   padding-bottom: 20px;
+}
+.active-track{
+    background: white;
+  color: #c1fdfa !important;
+
+  font-weight: bold;
+  
+}
+
+.active-track > .playlist-info-track,.active-track >.playlist-duration,.active-track > .playlist-btn-play{
+  color: white!important;
+}
+
+
+.playlist-btn-play{
+  pointer-events: none;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.fas{
+  color: #ffffff00;
+  font-size: 20px;
+}
+</style>
+</head>
+<body>
+  
+<model-viewer ar="" ar-modes="webxr scene-viewer quick-look" quick-look-browsers="safari chrome" ar-scale="auto" id="configurator"shadow-intensity="1" animation-name="playme" environment-image="negative-space-beautiful-tropical-beach-dominican-republic.jpg" shadow-softness="1" orientation="0deg 0deg 0deg" bounds="tight" data-js-focus-visible="" enable-pan="" camera-controls="" auto-rotate rotation-per-second="10deg" touch-action="none" src="newplay3.glb" interaction-prompt="none" alt="" ar-status="not-presenting">
+</model-viewer>
+
+<!--PLAY TRIGGER-->  	
+<div class="btn-action" style="position:absolute;" onclick="toggleAudio()", "forward()">		
+<div id="playdiv" class="playdiv" onclick="playAnimation('KeyAction.006','once','pingpong')" >	
+<button class="playbtn"  onclick="playAnimation('KeyAction.006','once','pingpong')"></button>
+</div><!--end playdiv-->	</div>
+
+
+<!--PAUSE TRIGGER-->  
+<div class="btn-action" style="position:absolute;" onclick="toggleAudio()">		
+<div id="pausediv" class="pausediv" onclick="playAnimation('KeyAction.007','once', 'pingpong'), visor('1')"style="display:none">
+<button class="pausebtn" onclick="playAnimation('KeyAction.007', 'pingpong'), visor('1')"></button>
+</div><!--end pausediv--></div>
+	
+<audio id="myAudio" ontimeupdate="onTimeUpdate()" style="position:absolute; z-index:9;">
+
+    <source id="source-audio" src="" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+  <div class="player-ctn" style="margin-top:-2vh">
+    <div class="infos-ctn">
+      <div class="timer">00:00</div>
+      <div class="title"></div>
+      <div class="duration">00:00</div>
+    </div>
+    <div id="myProgress">
+      <div id="myBar"></div>
+    </div>
+    <div class="btn-ctn">
+    
+       <div class="btn-action" >
+          <div id="btn-faws-play-pause">
+            <i class='fas fa-play' id="icon-play"></i>
+            <i class='fas fa-pause' id="icon-pause" style="display: none"></i>
+          </div>
+       </div>
+    </div>
+    <div class="playlist-ctn"></div>
+  </div>
+
+
+<!--SCRIPTS-->
+
+<!--TRIGGER PLAY-SCRIPT-->
+<script>
+const playdiv= document.getElementById('playdiv');
+
+playdiv.addEventListener('click', () => {
+  // 👇️ hide playdiv
+  playdiv.style.display = 'none';
+
+  // 👇️ show pausediv
+  const pausediv = document.getElementById('pausediv');
+  pausediv.style.display = 'block';
+});
+</script>
+
+<!--TRIGGER PAUSE-SCRIPT-->		
+<script>
+const box = document.getElementById('pausediv');
+pausediv.addEventListener('click', () => {
+
+// 👇️ hide pausediv
+pausediv.style.display = 'none';
+
+// 👇️ show playdiv
+const playdiv = document.getElementById('playdiv');
+playdiv.style.display = 'block';
+});
+</script>
+
+<!--ANIMATION-SCRIPT -->
+<script type="text/javascript">
+function playAnimation(animation_name,animation_type) {
+  const modelViewer = document.querySelector("model-viewer");   
+  modelViewer.animationName = animation_name;
+  if (animation_type == 'once') {
+  	console.log('once');
+    modelViewer.play({repetitions: 1});
+    console.log(modelViewer);
+    modelViewer.addEventListener('finished', pause);
+  }else if(animation_type == 'loop'){
+  	console.log('loop');
+  	modelViewer.play();
+  }
+} 
+const pause = () => {
+	const modelViewer = document.querySelector("model-viewer");
+  modelViewer.pause();
+} 
+const finished = () => {
+	const modelViewer = document.querySelector("model-viewer");
+  modelViewer.finished();
+} 
+(() => {
+  const modelViewer = document.classList('.annotation');
+
+  self.setInterval(() => {
+    modelViewer.animationName = modelViewer.animationName === 'play' ?
+      'pause' : 'play';
+  }, 0);
+})();
+function interpolationDecay(e){
+	const modelViewer = document.querySelector("model-viewer");
+	modelViewer.setAttribute("interpolation-decay", e);
+}
+function resetInterpolationDecay(){	
+	const modelViewer = document.querySelector("model-viewer");   
+	if (modelViewer.hasAttribute("interpolation-decay")) {
+		modelViewer.removeAttribute("interpolation-decay");
+		modelViewer.setAttribute("interpolation-decay", 1);
+	}	
+}
+// change AR files for android and iOS
+function load(i,a,e,x,n,u,s,si,ss,h,rps,tbtn,blp,use_glb,use_glb_src,field_of_view,min_field_of_view,max_field_of_view,qr,camera_orbit,min_camera_orbit,max_camera_orbit,camera_target,buy_button) {
+	//Loader();
+	buy_link = blp;
+	currentHostPost = h;
+	currentQrActiveIs = qr;
+    document.getElementsByTagName("model-viewer")[0].pause();
+    document.getElementsByTagName("model-viewer")[0].currentTime = 0;
+
+	document.getElementsByTagName("model-viewer")[0].setAttribute("ios-src", i);
+	if (e) {
+		document.getElementsByTagName("model-viewer")[0].setAttribute("environment-image", e);
+	}
+
+	if (x) {
+		document.getElementsByTagName("model-viewer")[0].setAttribute("exposure", x);
+	}
+
+	document.getElementsByTagName("model-viewer")[0].setAttribute("interaction-prompt", n);
+
+	if (u==1) {
+	is_auto_rotate = 1;
+    document.getElementsByTagName("model-viewer")[0].setAttribute("auto-rotate", true);
+    document.getElementsByTagName("model-viewer")[0].setAttribute("rotation-per-second", rps);
+	}else{
+	is_auto_rotate = 0;
+    document.getElementsByTagName("model-viewer")[0].setAttribute("auto-rotate", false);
+    document.getElementsByTagName("model-viewer")[0].setAttribute("rotation-per-second", '0deg');
+	}
+
+	if (s=='') {
+    	document.getElementsByTagName("model-viewer")[0].setAttribute("skybox-image", '');
+	}else{
+  		document.getElementsByTagName("model-viewer")[0].setAttribute("skybox-image", s);
+	} 
+
+	if (camera_orbit) {
+		document.getElementsByTagName("model-viewer")[0].setAttribute("camera-orbit", camera_orbit);
+	}
+	
+	if (min_camera_orbit.length != 0){
+		document.getElementsByTagName("model-viewer")[0].setAttribute("min-camera-orbit", min_camera_orbit);
+	}
+	
+	if (max_camera_orbit.length != 0){
+		document.getElementsByTagName("model-viewer")[0].setAttribute("max-camera-orbit", max_camera_orbit);
+	}
+	
+	if (camera_target.length != 0){
+		document.getElementsByTagName("model-viewer")[0].setAttribute("camera-target", camera_target);
+	}
+	
+
+	document.getElementsByTagName("model-viewer")[0].setAttribute("shadow-intensity", si);
+
+	document.getElementsByTagName("model-viewer")[0].setAttribute("shadow-softness", ss); 
+
+	if (buy_button != '#') {
+		document.getElementsByClassName("buy_button_a")[0].style.display="block";
+		document.getElementsByClassName("buy_button_a")[0].setAttribute("href", buy_button);
+	}else{
+		document.getElementsByClassName("buy_button_a")[0].style.display="none";
+		document.getElementsByClassName("buy_button_a")[0].setAttribute("href", buy_button);		
+	}
+
+
+	if (field_of_view.length != 0){
+		document.getElementsByTagName("model-viewer")[0].setAttribute("field-of-view", field_of_view);
+	}
+
+	if (min_field_of_view.length != 0){
+		document.getElementsByTagName("model-viewer")[0].setAttribute("field-of-view", min_field_of_view);
+	}
+	
+	if (max_field_of_view.length != 0){
+		document.getElementsByTagName("model-viewer")[0].setAttribute("field-of-view", max_field_of_view);
+	}
+
+	var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  //	if (!isMobile) { 
+		if (use_glb==1) {
+			// console.log('use_glb: ' + use_glb);
+			// console.log('use_glb_src: ' + a);
+			document.getElementsByTagName("model-viewer")[0].setAttribute("src", a);
+		}else{
+			// console.log('use_glb: ' + use_glb);
+			// console.log('use_glb_src: ' + use_all_glb_src[use_glb_src]);
+			document.getElementsByTagName("model-viewer")[0].setAttribute("src", use_all_glb_src[use_glb_src]);
+		}
+	//}
+	loadAndroidModel(a);
+}
+
+function Loader(){
+	//console.log("loaded");
+	document.getElementsByClassName("loader")[0].style.display = "block";
+}
+
+function removeLoader(){
+	//console.log("unloaded");
+	document.getElementsByClassName("loader")[0].style.display = "none";
+}
+
+function loadAndroidModel(armodel) {
+  var ua = navigator.userAgent.toLowerCase();
+  var isAndroid = ua.indexOf("android") > -1; //&& ua.indexOf("mobile");
+  if (isAndroid) {
+      // Do something!
+      // Redirect to Android-site?
+      document.getElementsByTagName("model-viewer")[0].setAttribute("src", armodel);
+  }
+}
+</script>
+
+
+<!--CONFIG-MOD VIEWER-->
+  <script type="module">
+    const modelViewer = document.querySelector("model-viewer#configurator");
+  
+ 	modelViewer.addEventListener('load', () => {
+ 		modelViewer.scale = `1 1 1`;
+    	const center = modelViewer.getCameraTarget();
+		const size = modelViewer.getDimensions();
+		const x2 = size.x / 2;
+		const y2 = size.y / 2;
+		const z2 = size.z / 2;
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dot+X-Y+Z',
+			position: `${center.x + x2} ${center.y - y2} ${center.z + z2}`
+		});
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dim+X-Y',
+			position: `${center.x + x2} ${center.y - y2} ${center.z}`
+		});
+		modelViewer.querySelector('button[slot="hotspot-dim+X-Y"]').textContent = (is_by_factor == 'Yes' ? `${((size.z*100)/100).toFixed(2)} cm` : `${(size.z*100).toFixed(2)} cm`);
+		
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dot+X-Y-Z',
+			position: `${center.x + x2} ${center.y - y2} ${center.z - z2}`
+		});
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dim+X-Z',
+			position: `${center.x + x2} ${center.y} ${center.z - z2}`
+		});
+		modelViewer.querySelector('button[slot="hotspot-dim+X-Z"]').textContent = (is_by_factor == 'Yes' ? `${((size.y*100)/100).toFixed(2)} cm` : `${(size.y*100).toFixed(2)} cm`);
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dot+X+Y-Z',
+			position: `${center.x + x2} ${center.y + y2} ${center.z - z2}`
+		});
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dim+Y-Z',
+			position: `${center.x} ${center.y + y2} ${center.z - z2}`
+		});
+		modelViewer.querySelector('button[slot="hotspot-dim+Y-Z"]').textContent = (is_by_factor == 'Yes' ? `${((size.x*100)/100).toFixed(2)} cm` : `${(size.x*100).toFixed(2)} cm`);
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dot-X+Y-Z',
+			position: `${center.x - x2} ${center.y + y2} ${center.z - z2}`
+		});
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dim-X-Z',
+			position: `${center.x - x2} ${center.y} ${center.z - z2}`
+		});
+		modelViewer.querySelector('button[slot="hotspot-dim-X-Z"]').textContent = (is_by_factor == 'Yes' ? `${((size.y*100)/100).toFixed(2)} cm` : `${(size.y*100).toFixed(2)} cm`);
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dot-X-Y-Z',
+			position: `${center.x - x2} ${center.y - y2} ${center.z - z2}`
+		});
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dim-X-Y',
+			position: `${center.x - x2} ${center.y - y2} ${center.z}`
+		});
+		modelViewer.querySelector('button[slot="hotspot-dim-X-Y"]').textContent = (is_by_factor == 'Yes' ? `${((size.z*100)/100).toFixed(2)} cm` : `${(size.z*100).toFixed(2)} cm`);
+
+		modelViewer.updateHotspot({
+			name: 'hotspot-dot-X-Y+Z',
+			position: `${center.x - x2} ${center.y - y2} ${center.z + z2}`
+		});
+
+    	modelViewer.querySelectorAll('button').forEach((hotspot) => {
+        	hotspot.classList.add('hide');
+    	}); 
+    });
+  </script>
+
+<!--AUDIO PLAYER SCRIPT-->
+<script>
+    function createTrackItem(index,name,duration){
+    var trackItem = document.createElement('div');
+    trackItem.setAttribute("class", "playlist-track-ctn");
+    trackItem.setAttribute("id", "ptc-"+index);
+    trackItem.setAttribute("data-index", index);
+    document.querySelector(".playlist-ctn").appendChild(trackItem);
+
+    var playBtnItem = document.createElement('div');
+    playBtnItem.setAttribute("class", "playlist-btn-play");
+    playBtnItem.setAttribute("id", "pbp-"+index);
+    document.querySelector("#ptc-"+index).appendChild(playBtnItem);
+
+    var btnImg = document.createElement('i');
+    btnImg.setAttribute("class", "fas fa-play");
+    btnImg.setAttribute("height", "40");
+    btnImg.setAttribute("width", "40");
+    btnImg.setAttribute("id", "p-img-"+index);
+    document.querySelector("#pbp-"+index).appendChild(btnImg);
+
+    var trackInfoItem = document.createElement('div');
+    trackInfoItem.setAttribute("class", "playlist-info-track");
+    trackInfoItem.innerHTML = name
+    document.querySelector("#ptc-"+index).appendChild(trackInfoItem);
+
+    var trackDurationItem = document.createElement('div');
+    trackDurationItem.setAttribute("class", "playlist-duration");
+    trackDurationItem.innerHTML = duration
+    document.querySelector("#ptc-"+index).appendChild(trackDurationItem);
+  }
+
+  var listAudio = [
+    {
+      name:"Israel Kamakawiwo ole - Somewhere Over The Rainbow",
+      file:"OTR.mp3",
+      duration:"03:31"
+    } 
+    
+  ]
+
+  for (var i = 0; i < listAudio.length; i++) {
+      createTrackItem(i,listAudio[i].name,listAudio[i].duration);
+  }
+  var indexAudio = 0;
+
+  function loadNewTrack(index){
+    var player = document.querySelector('#source-audio')
+    player.src = listAudio[index].file
+    document.querySelector('.title').innerHTML = listAudio[index].name
+    this.currentAudio = document.getElementById("myAudio");
+    this.currentAudio.load()
+    this.toggleAudio()
+    this.updateStylePlaylist(this.indexAudio,index)
+    this.indexAudio = index;
+  }
+
+  var playListItems = document.querySelectorAll(".playlist-track-ctn");
+
+  for (let i = 0; i < playListItems.length; i++){
+    playListItems[i].addEventListener("click", getClickedElement.bind(this));
+  }
+
+  function getClickedElement(event) {
+    for (let i = 0; i < playListItems.length; i++){
+      if(playListItems[i] == event.target){
+        var clickedIndex = event.target.getAttribute("data-index")
+        if (clickedIndex == this.indexAudio ) { // alert('Same audio');
+            this.toggleAudio()
+        }else{
+            loadNewTrack(clickedIndex);
+        }
+      }
+    }
+  }
+
+  document.querySelector('#source-audio').src = listAudio[indexAudio].file
+  document.querySelector('.title').innerHTML = listAudio[indexAudio].name
+
+
+  var currentAudio = document.getElementById("myAudio");
+
+  currentAudio.load()
+  
+  currentAudio.onloadedmetadata = function() {
+        document.getElementsByClassName('duration')[0].innerHTML = this.getMinutes(this.currentAudio.duration)
+  }.bind(this);
+
+  var interval1;
+
+  function toggleAudio() {
+
+    if (this.currentAudio.paused) {
+      document.querySelector('#icon-play').style.display = 'none';
+      document.querySelector('#icon-pause').style.display = 'block';
+      document.querySelector('#ptc-'+this.indexAudio).classList.add("active-track");
+      this.playToPause(this.indexAudio)
+      this.currentAudio.play();
+    }else{
+      document.querySelector('#icon-play').style.display = 'block';
+      document.querySelector('#icon-pause').style.display = 'none';
+      this.pauseToPlay(this.indexAudio)
+      this.currentAudio.pause();
+    }
+  }
+
+  function pauseAudio() {
+    this.currentAudio.pause();
+    clearInterval(interval1);
+  }
+
+  var timer = document.getElementsByClassName('timer')[0]
+
+  var barProgress = document.getElementById("myBar");
+
+
+  var width = 0;
+
+  function onTimeUpdate() {
+    var t = this.currentAudio.currentTime
+    timer.innerHTML = this.getMinutes(t);
+    this.setBarProgress();
+    if (this.currentAudio.ended) {
+      document.querySelector('#icon-play').style.display = 'block';
+      document.querySelector('#icon-pause').style.display = 'none';
+      this.pauseToPlay(this.indexAudio)
+      if (this.indexAudio < listAudio.length-1) {
+          var index = parseInt(this.indexAudio)+1
+          this.loadNewTrack(index)
+      }
+    }
+  }
+
+
+  function setBarProgress(){
+    var progress = (this.currentAudio.currentTime/this.currentAudio.duration)*100;
+    document.getElementById("myBar").style.width = progress + "%";
+  }
+
+
+  function getMinutes(t){
+    var min = parseInt(parseInt(t)/60);
+    var sec = parseInt(t%60);
+    if (sec < 10) {
+      sec = "0"+sec
+    }
+    if (min < 10) {
+      min = "0"+min
+    }
+    return min+":"+sec
+  }
+
+  var progressbar = document.querySelector('#myProgress')
+  progressbar.addEventListener("click", seek.bind(this));
+
+
+  function seek(event) {
+    var percent = event.offsetX / progressbar.offsetWidth;
+    this.currentAudio.currentTime = percent * this.currentAudio.duration;
+    barProgress.style.width = percent*100 + "%";
+  }
+
+  function forward(){
+    this.currentAudio.currentTime = this.currentAudio.currentTime + 5
+    this.setBarProgress();
+  }
+
+  function rewind(){
+    this.currentAudio.currentTime = this.currentAudio.currentTime - 5
+    this.setBarProgress();
+  }
+
+
+  function next(){
+    if (this.indexAudio <listAudio.length-1) {
+        var oldIndex = this.indexAudio
+        this.indexAudio++;
+        updateStylePlaylist(oldIndex,this.indexAudio)
+        this.loadNewTrack(this.indexAudio);
+    }
+  }
+
+  function previous(){
+    if (this.indexAudio>0) {
+        var oldIndex = this.indexAudio
+        this.indexAudio--;
+        updateStylePlaylist(oldIndex,this.indexAudio)
+        this.loadNewTrack(this.indexAudio);
+    }
+  }
+
+  function updateStylePlaylist(oldIndex,newIndex){
+    document.querySelector('#ptc-'+oldIndex).classList.remove("active-track");
+    this.pauseToPlay(oldIndex);
+    document.querySelector('#ptc-'+newIndex).classList.add("active-track");
+    this.playToPause(newIndex)
+  }
+
+  function playToPause(index){
+    var ele = document.querySelector('#p-img-'+index)
+    ele.classList.remove("fa-play");
+    ele.classList.add("fa-pause");
+  }
+
+  function pauseToPlay(index){
+    var ele = document.querySelector('#p-img-'+index)
+    ele.classList.remove("fa-pause");
+    ele.classList.add("fa-play");
+  }
+
+
+  function toggleMute(){
+    var btnMute = document.querySelector('#toggleMute');
+    var volUp = document.querySelector('#icon-vol-up');
+    var volMute = document.querySelector('#icon-vol-mute');
+    if (this.currentAudio.muted == false) {
+       this.currentAudio.muted = true
+       volUp.style.display = "none"
+       volMute.style.display = "block"
+    }else{
+      this.currentAudio.muted = false
+      volMute.style.display = "none"
+      volUp.style.display = "block"
+    }
+  }
+</script>
+
+</body>
+</html>
